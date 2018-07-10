@@ -2,7 +2,7 @@
 
 import numpy as np
 import tensorflow as tf
-import queue
+import Queue
 import threading
 
 SMALL_NUMBER = 1e-7
@@ -17,8 +17,8 @@ class ThreadedIterator:
     """An iterator object that computes its elements in a parallel thread to be ready to be consumed.
     The iterator should *not* return None"""
 
-    def __init__(self, original_iterator, max_queue_size: int=2):
-        self.__queue = queue.Queue(maxsize=max_queue_size)
+    def __init__(self, original_iterator, max_queue_size):
+        self.__queue = Queue.Queue(maxsize=max_queue_size)
         self.__thread = threading.Thread(target=lambda: self.worker(original_iterator))
         self.__thread.start()
 

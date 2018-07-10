@@ -94,7 +94,7 @@ class ChemModel(object):
             else:
                 self.initialize_model()
 
-    def load_data(self, file_name, is_training_data: bool):
+    def load_data(self, file_name, is_training_data):
         full_path = os.path.join(self.data_dir, file_name)
 
         print("Loading data from %s" % full_path)
@@ -116,11 +116,11 @@ class ChemModel(object):
         return self.process_raw_graphs(data, is_training_data)
 
     @staticmethod
-    def graph_string_to_array(graph_string: str) -> List[List[int]]:
+    def graph_string_to_array(graph_string):
         return [[int(v) for v in s.split(' ')]
                 for s in graph_string.split('\n')]
 
-    def process_raw_graphs(self, raw_data: Sequence[Any], is_training_data: bool) -> Any:
+    def process_raw_graphs(self, raw_data, is_training_data):
         raise Exception("Models have to implement process_raw_graphs!")
 
     def make_model(self):
@@ -188,16 +188,16 @@ class ChemModel(object):
     def gated_regression(self, last_h, regression_gate, regression_transform):
         raise Exception("Models have to implement gated_regression!")
 
-    def prepare_specific_graph_model(self) -> None:
+    def prepare_specific_graph_model(self):
         raise Exception("Models have to implement prepare_specific_graph_model!")
 
-    def compute_final_node_representations(self) -> tf.Tensor:
+    def compute_final_node_representations(self):
         raise Exception("Models have to implement compute_final_node_representations!")
 
-    def make_minibatch_iterator(self, data: Any, is_training: bool):
+    def make_minibatch_iterator(self, data, is_training):
         raise Exception("Models have to implement make_minibatch_iterator!")
 
-    def run_epoch(self, epoch_name: str, data, is_training: bool):
+    def run_epoch(self, epoch_name, data, is_training):
         chemical_accuracies = np.array([0.066513725, 0.012235489, 0.071939046, 0.033730778, 0.033486113, 0.004278493,
                                         0.001330901, 0.004165489, 0.004128926, 0.00409976, 0.004527465, 0.012292586,
                                         0.037467458])
@@ -225,8 +225,7 @@ class ChemModel(object):
             print("Running %s, batch %i (has %i graphs). Loss so far: %.4f" % (epoch_name,
                                                                                step,
                                                                                num_graphs,
-                                                                               loss / processed_graphs),
-                  end='\r')
+                                                                               loss / processed_graphs))
 
         accuracies = np.sum(accuracies, axis=0) / processed_graphs
         loss = loss / processed_graphs
@@ -285,7 +284,7 @@ class ChemModel(object):
                     print("Stopping training after %i epochs without improvement on validation accuracy." % self.params['patience'])
                     break
 
-    def save_model(self, path: str) -> None:
+    def save_model(self, path):
         weights_to_save = {}
         for variable in self.sess.graph.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
             assert variable.name not in weights_to_save
@@ -299,12 +298,12 @@ class ChemModel(object):
         with open(path, 'wb') as out_file:
             pickle.dump(data_to_save, out_file, pickle.HIGHEST_PROTOCOL)
 
-    def initialize_model(self) -> None:
+    def initialize_model(self):
         init_op = tf.group(tf.global_variables_initializer(),
                            tf.local_variables_initializer())
         self.sess.run(init_op)
 
-    def restore_model(self, path: str) -> None:
+    def restore_model(self, path):
         print("Restoring weights from file %s." % path)
         with open(path, 'rb') as in_file:
             data_to_load = pickle.load(in_file)

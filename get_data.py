@@ -22,6 +22,7 @@ if not os.path.exists(unzip_path):
     os.system('tar xvjf %s -C %s' % (download_path, unzip_path))
     print('finished extracting')
 
+
 def preprocess():
     index_of_mu = 4
 
@@ -43,7 +44,7 @@ def preprocess():
     all_files = glob.glob(os.path.join(unzip_path, '*.xyz'))
     for file_idx, file_path in enumerate(all_files):
         if file_idx % 100 == 0:
-            print('%.1f %%    \r' % (file_idx / float(len(all_files)) * 100), end=""),
+            print('%.1f %%    \r' % (file_idx / float(len(all_files)) * 100))
         if file_path not in valid_files:
             raw_data['train'].append(read_xyz(file_path))
         else:
@@ -61,6 +62,7 @@ def preprocess():
         return z
 
     bond_dict = {'SINGLE': 1, 'DOUBLE': 2, 'TRIPLE': 3, "AROMATIC": 4}
+
     def to_graph(smiles):
         mol = Chem.MolFromSmiles(smiles)
         mol = Chem.AddHs(mol)
@@ -75,9 +77,9 @@ def preprocess():
     print('parsing smiles as graphs...')
     processed_data = {'train': [], 'valid': []}
     for section in ['train', 'valid']:
-        for i,(smiles, mu) in enumerate([(mol['smiles'], mol['mu']) for mol in raw_data[section]]):
+        for i, (smiles, mu) in enumerate([(mol['smiles'], mol['mu']) for mol in raw_data[section]]):
             if i % 100 == 0:
-                print('%s: %.1f %%      \r' % (section, 100*i/float(len(raw_data[section]))), end="")
+                print('%s: %.1f %%      \r' % (section, 100 * i / float(len(raw_data[section]))))
             nodes, edges = to_graph(smiles)
             processed_data[section].append({
                 'targets': [[normalize_mu(mu)]],
@@ -87,8 +89,4 @@ def preprocess():
         print('%s: 100 %%      ' % (section))
         with open('molecules_%s.json' % section, 'w') as f:
             json.dump(processed_data[section], f)
-
 preprocess()
-
-
-
