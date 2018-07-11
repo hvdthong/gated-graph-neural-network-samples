@@ -25,7 +25,7 @@ from chem_tensorflow import ChemModel
 from utils import glorot_init, SMALL_NUMBER
 
 
-def bfs_visit(outgoing_edges: Dict[int, Sequence[int]], node_depths: Dict[int, int], v: int, depth: int):
+def bfs_visit(outgoing_edges, node_depths, v, depth):
     # Already seen, skip:
     if v in node_depths:
         return
@@ -36,15 +36,15 @@ def bfs_visit(outgoing_edges: Dict[int, Sequence[int]], node_depths: Dict[int, i
 
 class AsyncGGNNChemModel(ChemModel):
     def __init__(self, args):
-        super().__init__(args)
+        super(AsyncGGNNChemModel, self).__init__(args)
 
     @classmethod
     def default_params(cls):
-        params = dict(super().default_params())
+        # params = dict(super().default_params())
+        params = ChemModel.default_params()
         params.update({
             'num_nodes': 100000,
             'use_edge_bias': False,
-
             'propagation_rounds': 4,  # Has to be an even number
             'propagation_substeps': 15,
 
@@ -56,7 +56,7 @@ class AsyncGGNNChemModel(ChemModel):
         })
         return params
 
-    def prepare_specific_graph_model(self) -> None:
+    def prepare_specific_graph_model(self):
         h_dim = self.params['hidden_size']
         self.placeholders['initial_node_representation'] = tf.placeholder(tf.float32, [None, h_dim],
                                                                           name='node_features')
@@ -128,7 +128,7 @@ class AsyncGGNNChemModel(ChemModel):
                                              state_keep_prob=self.placeholders['graph_state_keep_prob'])
         self.weights['rnn_cells'] = cell
 
-    def compute_final_node_representations(self) -> tf.Tensor:
+    def compute_final_node_representations(self):
         cur_node_states = self.placeholders['initial_node_representation']
 
         for prop_round in range(self.params['propagation_rounds']):
@@ -229,7 +229,7 @@ class AsyncGGNNChemModel(ChemModel):
         return tf.squeeze(graph_representations)  # [g]
 
     # ----- Data preprocessing and chunking into minibatches:
-    def process_raw_graphs(self, raw_data: Sequence[Any], is_training_data: bool) -> Any:
+    def process_raw_graphs(self, raw_data, is_training_data):
         processed_graphs = []
         for d in raw_data:
             prop_schedules = self.__graph_to_propagation_schedules(d['graph'])
@@ -248,8 +248,7 @@ class AsyncGGNNChemModel(ChemModel):
 
         return processed_graphs
 
-    def __tensorise_edge_sequence(self, edges)\
-            -> Tuple[np.ndarray, List[List[np.ndarray]], List[List[np.ndarray]], List[np.ndarray]]:
+    def __tensorise_edge_sequence(self, edges):
         sending_nodes = []  # type: List[List[np.ndarray]]
         msg_targets = []  # type: List[List[np.ndarray]]
         receiving_nodes = []  # type: List[np.ndarray]
@@ -290,8 +289,7 @@ class AsyncGGNNChemModel(ChemModel):
 
         return (np.array(initial_nodes, dtype=np.int32), sending_nodes, msg_targets, receiving_nodes)
 
-    def __graph_to_propagation_schedules(self, graph)\
-            -> List[Tuple[np.ndarray, List[List[np.ndarray]], List[List[np.ndarray]], List[np.ndarray]]]:
+    def __graph_to_propagation_schedules(self, graph):
         num_incoming_edges = defaultdict(lambda: 0)
         outgoing_edges = defaultdict(lambda: [])
         # Compute number of incoming edges per node, and build adjacency lists:
@@ -334,7 +332,7 @@ class AsyncGGNNChemModel(ChemModel):
 
         return tensorised_prop_schedules
 
-    def make_minibatch_iterator(self, data: Any, is_training: bool):
+    def make_minibatch_iterator(self, data, is_training):
         """Create minibatches by flattening graphs into a single one with multiple disconnected components."""
         if is_training:
             np.random.shuffle(data)
