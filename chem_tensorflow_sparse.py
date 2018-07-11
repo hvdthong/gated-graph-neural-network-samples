@@ -33,11 +33,12 @@ GGNNWeights = namedtuple('GGNNWeights', ['edge_weights',
 
 class SparseGGNNChemModel(ChemModel):
     def __init__(self, args):
-        super().__init__(args)
+        super(SparseGGNNChemModel, self).__init__(args)
 
     @classmethod
     def default_params(cls):
-        params = dict(super().default_params())
+        # params = dict(super().default_params())
+        params = ChemModel.default_params()
         params.update({
             'batch_size': 100000,
             'use_edge_bias': False,
@@ -58,7 +59,7 @@ class SparseGGNNChemModel(ChemModel):
         })
         return params
 
-    def prepare_specific_graph_model(self) -> None:
+    def prepare_specific_graph_model(self):
         h_dim = self.params['hidden_size']
         self.placeholders['initial_node_representation'] = tf.placeholder(tf.float32, [None, h_dim],
                                                                           name='node_features')
@@ -112,7 +113,7 @@ class SparseGGNNChemModel(ChemModel):
                                                      state_keep_prob=self.placeholders['graph_state_keep_prob'])
                 self.gnn_weights.rnn_cells.append(cell)
 
-    def compute_final_node_representations(self) -> tf.Tensor:
+    def compute_final_node_representations(self):
         node_states_per_layer = []  # one entry per layer (final state of that layer), shape: number of nodes in batch v x D
         node_states_per_layer.append(self.placeholders['initial_node_representation'])
         num_nodes = tf.shape(self.placeholders['initial_node_representation'], out_type=tf.int32)[0]
@@ -227,7 +228,7 @@ class SparseGGNNChemModel(ChemModel):
         return tf.squeeze(graph_representations)  # [g]
 
     # ----- Data preprocessing and chunking into minibatches:
-    def process_raw_graphs(self, raw_data: Sequence[Any], is_training_data: bool) -> Any:
+    def process_raw_graphs(self, raw_data, is_training_data):
         processed_graphs = []
         for d in raw_data:
             (adjacency_lists, num_incoming_edge_per_type) = self.__graph_to_adjacency_lists(d['graph'])
@@ -247,7 +248,7 @@ class SparseGGNNChemModel(ChemModel):
 
         return processed_graphs
 
-    def __graph_to_adjacency_lists(self, graph) -> Tuple[Dict[int, np.ndarray], Dict[int, Dict[int, int]]]:
+    def __graph_to_adjacency_lists(self, graph):
         adj_lists = defaultdict(list)
         num_incoming_edges_dicts_per_type = defaultdict(lambda: defaultdict(lambda: 0))
         for src, e, dest in graph:
@@ -271,7 +272,7 @@ class SparseGGNNChemModel(ChemModel):
 
         return final_adj_lists, num_incoming_edges_dicts_per_type
 
-    def make_minibatch_iterator(self, data: Any, is_training: bool):
+    def make_minibatch_iterator(self, data, is_training):
         """Create minibatches by flattening adjacency matrices into a single adjacency matrix with
         multiple disconnected components."""
         if is_training:

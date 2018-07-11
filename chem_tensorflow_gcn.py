@@ -27,11 +27,12 @@ from utils import glorot_init
 
 class SparseGCNChemModel(ChemModel):
     def __init__(self, args):
-        super().__init__(args)
+        super(SparseGCNChemModel, self).__init__(args)
 
     @classmethod
     def default_params(cls):
-        params = dict(super().default_params())
+        # params = dict(super().default_params())
+        params = ChemModel.default_params()
         params.update({'batch_size': 100000,
                        'task_sample_ratios': {},
                        'gcn_use_bias': False,
@@ -39,7 +40,7 @@ class SparseGCNChemModel(ChemModel):
                        })
         return params
 
-    def prepare_specific_graph_model(self) -> None:
+    def prepare_specific_graph_model(self):
         h_dim = self.params['hidden_size']
         self.placeholders['initial_node_representation'] = tf.placeholder(tf.float32, [None, h_dim],
                                                                           name='node_features')
@@ -93,7 +94,7 @@ class SparseGCNChemModel(ChemModel):
         return tf.squeeze(graph_representations)  # [g]
 
     # ----- Data preprocessing and chunking into minibatches:
-    def process_raw_graphs(self, raw_data: Sequence[Any], is_training_data: bool) -> Any:
+    def process_raw_graphs(self, raw_data, is_training_data):
         processed_graphs = []
         for d in raw_data:
             (adjacency_list, adjacency_weights) = self.__graph_to_adjacency_list(d['graph'], len(d["node_features"]))
@@ -113,7 +114,7 @@ class SparseGCNChemModel(ChemModel):
 
         return processed_graphs
 
-    def __graph_to_adjacency_list(self, graph, num_nodes: int) -> Tuple[np.ndarray, np.ndarray]:
+    def __graph_to_adjacency_list(self, graph, num_nodes):
         # Step 1: Generate adjacency matrices:
         adj_matrix = np.zeros((num_nodes, num_nodes))
         for src, _, dest in graph:
@@ -141,7 +142,7 @@ class SparseGCNChemModel(ChemModel):
 
         return np.array(final_adj_list), np.array(final_adj_weights)
 
-    def make_minibatch_iterator(self, data: Any, is_training: bool):
+    def make_minibatch_iterator(self, data, is_training):
         """Create minibatches by flattening adjacency matrices into a single adjacency matrix with
         multiple disconnected components."""
         if is_training:
